@@ -16,7 +16,7 @@ CineSync is a full-stack real-time watch party platform that supports **both**:
 
 ### Step 1: Start the Backend Server
 ```powershell
-cd C:\Users\puroh\.gemini\antigravity\scratch\netflix-watch-party\backend
+\netflix-watch-party\backend
 npm start
 ```
 
