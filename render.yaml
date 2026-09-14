@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cinesync
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
