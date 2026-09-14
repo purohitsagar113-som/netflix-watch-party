@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineSync Side Panel</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="panel-container">
+    <!-- Top Header -->
+    <header class="header">
+      <div class="brand">
+        <img class="logo" src="cinesync-logo.svg" alt="CineSync">
+        <span class="title">CineSync</span>
+      </div>
+      <div id="connection-pill" class="status-pill disconnected">
+        <span class="dot"></span>
+        <span id="connection-text">Offline</span>
+      </div>
+    </header>
+
+    <!-- VIEW 1: Setup / Join Screen -->
+    <div id="view-setup" class="view">
+      <div class="setup-card">
+        <h2>Start or Join a Party</h2>
+        <p class="desc">Sync supported OTT players in real time with friends anywhere.</p>
+
+        <div class="input-group">
+          <label for="input-provider">OTT service</label>
+          <div class="provider-logos" role="group" aria-label="OTT service">
+            <button type="button" class="provider-logo netflix" data-provider-card="netflix" aria-label="Netflix">
+              <span class="provider-mark"><img src="netflix_logo_icon_170919.svg" alt=""></span><span>Netflix</span>
+            </button>
+            <button type="button" class="provider-logo primevideo" data-provider-card="primevideo" aria-label="Prime Video">
+              <span class="provider-mark"><img src="Amazon_Prime_Video_logo_(2024).svg" alt=""></span><span>Prime Video</span>
+            </button>
+            <button type="button" class="provider-logo jiohotstar" data-provider-card="jiohotstar" aria-label="JioHotstar">
+              <span class="provider-mark"><img src="jiohotstar-seeklogo.svg" alt=""></span><span>JioHotstar</span>
+            </button>
+          </div>
+          <select id="input-provider">
+            <option value="netflix">Netflix</option>
+            <option value="primevideo">Prime Video</option>
+            <option value="jiohotstar">JioHotstar</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="input-username">Your Nickname</label>
+          <input type="text" id="input-username" placeholder="e.g. MovieBuff99" value="MovieFan">
+        </div>
+
+        <div class="input-group">
+          <label for="input-server">Sync Server URL</label>
+          <input type="text" id="input-server" value="http://localhost:4000">
+        </div>
+
+        <div class="input-group">
+          <label for="input-room">Room Code</label>
+          <div class="row-flex">
+            <input type="text" id="input-room" placeholder="Enter or generate code">
+            <button type="button" id="btn-gen-room" class="btn-sm">New</button>
+          </div>
+        </div>
+
+        <button id="btn-join" class="btn btn-primary full-width">
+          <span aria-hidden="true">✦</span> Join / Create Room
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: In-Party Active Room -->
+    <div id="view-party" class="view" style="display: none;">
+      <!-- Room Info Banner -->
+      <div class="room-banner">
+        <div class="room-info">
+          <span class="label">ACTIVE ROOM</span>
+          <strong id="party-room-id">CINE-0000</strong>
+        </div>
+        <button id="btn-copy-link" class="btn-icon" title="Copy Share Link">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy Link</span>
+        </button>
+      </div>
+      <div class="share-link-box">
+        <label for="share-link">Invite link</label>
+        <input id="share-link" type="text" readonly aria-label="Invite link">
+        <button id="btn-select-link" type="button" class="btn-sm">Select link</button>
+      </div>
+
+      <!-- Sync Status & Player Info -->
+      <div class="sync-card">
+        <div class="sync-header">
+          <span class="sync-indicator">⚡ Synced with Host</span>
+          <span id="player-time" class="time-stamp">00:00:00</span>
+        </div>
+        <div class="sync-controls">
+          <button id="btn-force-sync" class="btn-sm">↺ Re-Sync Now</button>
+          <button id="btn-leave" class="btn-sm btn-danger">Leave</button>
+        </div>
+      </div>
+
+      <!-- Participants Accordion / Drawer -->
+      <div class="participants-section">
+        <div class="section-title">
+          <span>Participants (<span id="member-count">1</span>)</span>
+        </div>
+        <div id="members-list" class="members-list">
+          <!-- Dynamic members -->
+        </div>
+      </div>
+
+      <!-- Chat Stream -->
+      <div class="chat-section">
+        <div id="chat-messages" class="chat-messages">
+          <div class="system-msg">Welcome to CineSync! Play, pause, or seek on the selected OTT service to sync everyone.</div>
+        </div>
+
+        <!-- Quick Reactions -->
+        <div class="reactions-row">
+          <button class="rx-btn" data-emoji="🍿">🍿</button>
+          <button class="rx-btn" data-emoji="😂">😂</button>
+          <button class="rx-btn" data-emoji="😱">😱</button>
+          <button class="rx-btn" data-emoji="❤️">❤️</button>
+          <button class="rx-btn" data-emoji="👏">👏</button>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="chat-form">
+          <input type="text" id="chat-input" placeholder="Say something..." autocomplete="off">
+          <button id="btn-send-chat" class="btn-send">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="socket.io.min.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

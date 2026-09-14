@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CineSync — Personal Movie Watch Room</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <style>
+    :root {
+      --bg: #0c0d14;
+      --panel-bg: #141622;
+      --card-bg: #1c1f2e;
+      --accent: #e50914;
+      --accent-hover: #f40612;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #282d3f;
+      --green: #22c55e;
+      --blue: #38bdf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Header */
+    header {
+      background: #10121a;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; color: var(--accent); text-decoration: none; }
+    .room-tag {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .room-tag strong { color: var(--text); letter-spacing: 0.5px; }
+
+    /* Layout */
+    .app-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    @media (max-width: 860px) {
+      .app-layout { flex-direction: column; overflow-y: auto; }
+      body { overflow-y: auto; }
+    }
+
+    /* Main Player Section */
+    .player-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+      position: relative;
+    }
+    .video-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      overflow: hidden;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+    }
+    #yt-player-container {
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    /* Progress Overlay for Uploading Large Movie Files */
+    #upload-progress-box {
+      display: none;
+      background: #141824;
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin: 8px 16px 0 16px;
+    }
+    .progress-bar-track {
+      background: #252a3b;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-bar-fill {
+      background: var(--accent);
+      height: 100%;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+
+    /* Source Selector Bar */
+    .source-bar {
+      background: var(--panel-bg);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .source-title { font-size: 13px; font-weight: 600; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn {
+      background: #232738;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: #2f354a; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    /* Sidebar */
+    .sidebar {
+      width: 340px;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    @media (max-width: 860px) {
+      .sidebar { width: 100%; height: 380px; border-left: none; border-top: 1px solid var(--border); }
+    }
+
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--green);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* Participants */
+    .members-strip {
+      padding: 8px 16px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border);
+      background: #11131c;
+    }
+    .member-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #1f2333;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .member-pill.host { border: 1px solid var(--accent); }
+
+    /* Chat Stream */
+    .chat-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-msg {
+      background: var(--card-bg);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .chat-author { font-weight: 700; font-size: 11px; color: var(--accent); margin-bottom: 2px; }
+    .chat-sys {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Reactions & Input */
+    .rx-row {
+      display: flex;
+      gap: 6px;
+      padding: 6px 16px;
+      border-top: 1px solid var(--border);
+      background: #11131c;
+    }
+    .rx-btn {
+      background: #1b1e2c;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .chat-input-bar {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input-bar input {
+      flex: 1;
+      background: #0d0e15;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .chat-input-bar input:focus { outline: none; border-color: var(--accent); }
+
+    /* Modal for URL input */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 99;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 440px;
+    }
+    body { background: #070708; }
+    header { background: rgba(8,8,9,.82); backdrop-filter: blur(18px); border-bottom-color: rgba(255,255,255,.1); padding: 14px 22px; }
+    .brand { color: #fafafa; }
+    .room-tag, .sidebar-header, .source-bar, .members-strip, .rx-row { background: rgba(20,20,23,.9); border-color: rgba(255,255,255,.1); }
+    .room-tag strong, .chat-author { color: #ef233c; }
+    .room-tag, .btn, .chat-msg, .modal-card { border-radius: 10px; border-color: rgba(255,255,255,.1); }
+    .btn-primary { background: #ef233c; border-color: #ef233c; }
+    .btn-primary:hover { background: #ff5266; }
+    .sidebar { background: rgba(14,14,17,.96); border-left-color: rgba(255,255,255,.1); }
+    .video-wrapper { background: radial-gradient(circle at center, #191116 0, #000 58%); }
+    .chat-msg { background: rgba(255,255,255,.06); }
+    body { position: relative; background: #070708; }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .34;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, black 15%, transparent 78%);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      width: 720px;
+      height: 720px;
+      top: -360px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+      background: rgba(180,10,31,.16);
+      filter: blur(130px);
+    }
+    header, .app-layout { position: relative; z-index: 1; }
+    header {
+      margin: 14px 18px 0;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 18px 55px rgba(0,0,0,.26);
+    }
+    .app-layout {
+      margin: 0 18px 18px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-top: 0;
+      border-radius: 0 0 18px 18px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(0,0,0,.32);
+      background: rgba(10,10,12,.62);
+    }
+    .player-section {
+      background: linear-gradient(145deg, rgba(26,26,30,.72), rgba(7,7,8,.92));
+    }
+    .video-wrapper {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(180,10,31,.2), transparent 34%),
+        radial-gradient(circle at center, #211319 0, #09090b 54%, #070708 100%);
+    }
+    .video-wrapper::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .3;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, black 12%, transparent 80%);
+    }
+    .video-wrapper::after {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      top: -180px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+      background: rgba(180,10,31,.16);
+      filter: blur(100px);
+    }
+    .video-wrapper video,
+    .video-wrapper #yt-player-container {
+      position: relative;
+      z-index: 1;
+    }
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(239,35,60,.2), transparent 28%),
+        linear-gradient(145deg, rgba(26,26,30,.96), rgba(7,7,8,.98));
+      transition: opacity .2s ease;
+    }
+    .video-placeholder.hidden {
+      opacity: 0;
+    }
+    .video-placeholder-content {
+      text-align: center;
+      color: #9a9aa3;
+      font-size: 13px;
+      letter-spacing: .02em;
+    }
+    .video-placeholder-icon {
+      display: block;
+      margin-bottom: 10px;
+      color: #ef233c;
+      font-size: 30px;
+      filter: drop-shadow(0 0 18px rgba(239,35,60,.35));
+    }
+    .video-wrapper video {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(180,10,31,.22), transparent 32%),
+        linear-gradient(145deg, rgba(26,26,30,.94), rgba(7,7,8,.98));
+    }
+    .source-bar {
+      background: rgba(20,20,23,.82);
+      backdrop-filter: blur(16px);
+    }
+    .sidebar {
+      background: linear-gradient(180deg, rgba(20,20,23,.94), rgba(9,9,10,.97));
+      backdrop-filter: blur(16px);
+    }
+    .sidebar-header, .members-strip, .rx-row {
+      background: rgba(255,255,255,.025);
+    }
+    .chat-msg {
+      background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
+      box-shadow: 0 8px 22px rgba(0,0,0,.12);
+    }
+    .modal-card {
+      background: linear-gradient(145deg, rgba(26,26,30,.96), rgba(9,9,10,.96));
+      box-shadow: 0 24px 80px rgba(0,0,0,.5);
+    }
+    .source-bar, .sidebar-header, .members-strip, .rx-row {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+    }
+    .sidebar { box-shadow: -18px 0 50px rgba(0,0,0,.2); }
+    .icon {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .brand .icon { color: #ef233c; width: 22px; height: 22px; }
+    .brand-logo { display: block; width: 126px; height: 35px; object-fit: contain; }
+    .video-placeholder-icon .icon { width: 34px; height: 34px; }
+    .btn .icon { width: 17px; height: 17px; }
+    .rx-btn { transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .rx-btn:hover { transform: translateY(-2px); border-color: rgba(239,35,60,.6); box-shadow: 0 0 18px rgba(239,35,60,.16); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <a href="/" class="brand">
+      <img class="brand-logo" src="./cinesync-logo.svg" alt="CineSync">
+      <span>CineSync Personal Room</span>
+    </a>
+    <div class="room-tag">
+      <span>Room:</span>
+      <strong id="room-code-display">CINE-0000</strong>
+      <button class="btn" id="btn-copy" onclick="copyRoomLink()" style="padding: 3px 8px; font-size: 11px;">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copy Link</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Body Layout -->
+  <div class="app-layout">
+    
+    <!-- Player & Source Controls -->
+    <div class="player-section">
+      <!-- Upload Progress Alert -->
+      <div id="upload-progress-box">
+        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+          <span id="upload-progress-text">Uploading movie to room...</span>
+          <strong id="upload-progress-percent">0%</strong>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="upload-progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="video-wrapper">
+        <div id="video-placeholder" class="video-placeholder">
+          <div class="video-placeholder-content">
+            <span class="video-placeholder-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z" fill="currentColor" stroke="none"/></svg></span>
+            <span>Choose a movie to start the room</span>
+          </div>
+        </div>
+        <!-- Native HTML5 Video Player -->
+        <video id="player" controls playsinline preload="auto" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"></video>
+        
+        <!-- Embedded YouTube Player Container -->
+        <div id="yt-player-container"></div>
+      </div>
+
+      <!-- Video Source Chooser -->
+      <div class="source-bar">
+        <span class="source-title" id="source-display"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m8 6 2-3h4l2 3M8 18l2 3h4l2-3M9 10h.01M15 10h.01"/></svg> <span>Loaded: Big Buck Bunny (Sample)</span></span>
+
+        <input type="file" id="local-file-picker" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mp4,.webm,.ogv,.mkv" style="display: none;" onchange="handleFileSelected(event)">
+        
+        <button class="btn btn-primary" onclick="document.getElementById('local-file-picker').click()">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6l2 2h8v12H4z"/><path d="M12 10v6M9 13h6"/></svg>
+          <span>Choose Movie File</span>
+        </button>
+        <button class="btn" onclick="openUrlModal()">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z" fill="currentColor" stroke="none"/></svg>
+          <span>Enter URL / YouTube</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Sidebar (Chat & Participants) -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span style="font-weight: 700; font-size: 13px;">Party Room</span>
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span id="sync-status">In Sync</span>
+        </div>
+      </div>
+
+      <!-- Members Roster -->
+      <div class="members-strip" id="members-list">
+        <div class="member-pill host">👑 You</div>
+      </div>
+
+      <!-- Chat Stream -->
+      <div class="chat-stream" id="chat-stream">
+        <div class="chat-sys">Welcome to the Watch Room! Synchronized playback is active.</div>
+      </div>
+
+      <!-- Quick Reactions -->
+      <div class="rx-row">
+        <button class="rx-btn" onclick="sendReaction('🍿')">🍿</button>
+        <button class="rx-btn" onclick="sendReaction('😂')">😂</button>
+        <button class="rx-btn" onclick="sendReaction('😱')">😱</button>
+        <button class="rx-btn" onclick="sendReaction('❤️')">❤️</button>
+        <button class="rx-btn" onclick="sendReaction('👏')">👏</button>
+      </div>
+
+      <!-- Chat Input Form -->
+      <div class="chat-input-bar">
+        <input type="text" id="chat-input" placeholder="Say something..." autocomplete="off" onkeydown="if(event.key==='Enter') sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for entering Direct Video URL or YouTube -->
+  <div class="modal-backdrop" id="url-modal">
+    <div class="modal-card">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">Play from URL or YouTube</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Paste any direct video file (.mp4, .webm) or any YouTube video link:
+      </p>
+      <input type="text" id="url-input" placeholder="e.g. https://youtu.be/... or https://domain.com/movie.mp4" style="width: 100%; background: #0c0d14; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 13px;">
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn" onclick="closeUrlModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitVideoUrl()">Set Video</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URL Params & Room Setup
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get("room") || "PARTY-" + Math.floor(1000 + Math.random() * 9000);
+    const username = params.get("user") || "User_" + Math.floor(100 + Math.random() * 900);
+
+    document.getElementById("room-code-display").textContent = roomId;
+
+    const htmlVideo = document.getElementById("player");
+    const ytContainer = document.getElementById("yt-player-container");
+    const videoPlaceholder = document.getElementById("video-placeholder");
+
+    function setVideoPlaceholderVisible(visible) {
+      videoPlaceholder.classList.toggle("hidden", !visible);
+    }
+
+    let currentMode = "html5"; // 'html5' or 'youtube'
+    let ytPlayer = null;
+    let ytReady = false;
+    let socket = null;
+    let isRemoteActionLock = false;
+    let isHost = false;
+
+    // Connect to Socket.io Server
+    socket = io();
+
+    socket.on("connect", () => {
+      console.log("[CineSync] Connected to server:", socket.id);
+      socket.emit("JOIN_ROOM", { roomId, username, mode: "personal" });
+    });
+
+    socket.on("ROOM_STATE", (room) => {
+      isHost = room.hostId === socket.id;
+      renderMembers(room.members);
+
+      if (room.videoSource) {
+        applyVideoSource(room.videoSource);
+      }
+
+      if (room.currentTime) {
+        seekActivePlayer(room.currentTime);
+      }
+      if (room.isPlaying) {
+        playActivePlayer();
+      }
+    });
+
+    socket.on("MEMBERS_UPDATED", renderMembers);
+
+    socket.on("SYSTEM_NOTIFICATION", (msg) => {
+      appendSystemChat(msg.text);
+    });
+
+    // Remote Playback Sync
+    socket.on("REMOTE_ACTION", ({ action, time, senderName }) => {
+      isRemoteActionLock = true;
+      document.getElementById("sync-status").textContent = `Sync: ${action}`;
+
+      const curTime = getActivePlayerTime();
+      if (Math.abs(curTime - time) > 1.2) {
+        seekActivePlayer(time);
+      }
+
+      if (action === "PLAY") {
+        playActivePlayer();
+      } else if (action === "PAUSE") {
+        pauseActivePlayer();
+      }
+
+      setTimeout(() => {
+        isRemoteActionLock = false;
+        document.getElementById("sync-status").textContent = "In Sync";
+      }, 600);
+    });
+
+    // Remote Video Source Change
+    socket.on("VIDEO_SOURCE_CHANGED", ({ videoSource, senderName }) => {
+      appendSystemChat(`${senderName} changed video to "${videoSource.title}".`);
+      applyVideoSource(videoSource);
+    });
+
+    // Heartbeat Sync
+    socket.on("HEARTBEAT_SYNC", ({ currentTime, isPlaying }) => {
+      if (isHost) return;
+      const curTime = getActivePlayerTime();
+      const drift = Math.abs(curTime - currentTime);
+
+      if (drift > 1.8) {
+        isRemoteActionLock = true;
+        seekActivePlayer(currentTime);
+        setTimeout(() => { isRemoteActionLock = false; }, 400);
+      }
+    });
+
+    // HTML5 Video Event Listeners
+    htmlVideo.addEventListener("play", () => {
+      if (isRemoteActionLock || currentMode !== "html5") return;
+      socket.emit("SYNC_ACTION", { action: "PLAY", time: htmlVideo.currentTime });
+    });
+
+    htmlVideo.addEventListener("pause", () => {
+      if (isRemoteActionLock || currentMode !== "html5") return;
+      socket.emit("SYNC_ACTION", { action: "PAUSE", time: htmlVideo.currentTime });
+    });
+
+    htmlVideo.addEventListener("seeked", () => {
+      if (isRemoteActionLock || currentMode !== "html5") return;
+      socket.emit("SYNC_ACTION", { action: "SEEK", time: htmlVideo.currentTime });
+    });
+
+    htmlVideo.addEventListener("error", () => {
+      setVideoPlaceholderVisible(true);
+      if (htmlVideo.src) {
+        appendSystemChat("This video could not be played. Use a real H.264/AAC MP4, WebM, or Ogg file.");
+      }
+    });
+    htmlVideo.addEventListener("loadeddata", () => {
+      setVideoPlaceholderVisible(false);
+    });
+
+    // Heartbeat emitter (Host only)
+    setInterval(() => {
+      if (isHost && socket) {
+        const time = getActivePlayerTime();
+        const isPlaying = isPlayerPlaying();
+        if (isPlaying) {
+          socket.emit("HOST_HEARTBEAT", { currentTime: time, isPlaying });
+        }
+      }
+    }, 3000);
+
+    // YouTube IFrame API Initialization
+    window.onYouTubeIframeAPIReady = function() {
+      ytReady = true;
+      console.log("[YouTube API] Ready.");
+    };
+
+    function initYouTubePlayer(videoId) {
+      currentMode = "youtube";
+      setVideoPlaceholderVisible(false);
+      htmlVideo.pause();
+      htmlVideo.style.display = "none";
+      ytContainer.style.display = "block";
+
+      if (ytPlayer && ytPlayer.loadVideoById) {
+        ytPlayer.loadVideoById(videoId);
+      } else {
+        ytContainer.innerHTML = '<div id="yt-player"></div>';
+        ytPlayer = new YT.Player("yt-player", {
+          videoId: videoId,
+          width: "100%",
+          height: "100%",
+          playerVars: {
+            autoplay: 1,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0
+          },
+          events: {
+            onStateChange: (event) => {
+              if (isRemoteActionLock || currentMode !== "youtube") return;
+              if (event.data === YT.PlayerState.PLAYING) {
+                socket.emit("SYNC_ACTION", { action: "PLAY", time: ytPlayer.getCurrentTime() });
+              } else if (event.data === YT.PlayerState.PAUSED) {
+                socket.emit("SYNC_ACTION", { action: "PAUSE", time: ytPlayer.getCurrentTime() });
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function initHtml5Player(url) {
+      currentMode = "html5";
+      setVideoPlaceholderVisible(true);
+      if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+      ytContainer.style.display = "none";
+      htmlVideo.style.display = "block";
+      const resolvedUrl = resolveVideoUrl(url);
+      if (htmlVideo.src !== resolvedUrl) {
+        htmlVideo.src = resolvedUrl;
+      }
+    }
+
+    function applyVideoSource(source) {
+      document.getElementById("source-display").textContent = `🎬 Loaded: ${source.title || "Shared Video"}`;
+      if (source.type === "youtube") {
+        initYouTubePlayer(source.videoId);
+      } else {
+        initHtml5Player(source.url);
+      }
+    }
+
+    function resolveVideoUrl(url) {
+      return new URL(url, window.location.href).href;
+    }
+
+    function getActivePlayerTime() {
+      if (currentMode === "youtube" && ytPlayer && ytPlayer.getCurrentTime) {
+        return ytPlayer.getCurrentTime() || 0;
+      }
+      return htmlVideo.currentTime || 0;
+    }
+
+    function seekActivePlayer(time) {
+      if (currentMode === "youtube" && ytPlayer && ytPlayer.seekTo) {
+        ytPlayer.seekTo(time, true);
+      } else {
+        htmlVideo.currentTime = time;
+      }
+    }
+
+    function playActivePlayer() {
+      if (currentMode === "youtube" && ytPlayer && ytPlayer.playVideo) {
+        ytPlayer.playVideo();
+      } else {
+        htmlVideo.play().catch(() => {});
+      }
+    }
+
+    function pauseActivePlayer() {
+      if (currentMode === "youtube" && ytPlayer && ytPlayer.pauseVideo) {
+        ytPlayer.pauseVideo();
+      } else {
+        htmlVideo.pause();
+      }
+    }
+
+    function isPlayerPlaying() {
+      if (currentMode === "youtube" && ytPlayer && ytPlayer.getPlayerState) {
+        return ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+      }
+      return !htmlVideo.paused;
+    }
+
+    // File Picker with Upload Progress for Large Files
+    function handleFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const ext = file.name.split(".").pop().toLowerCase();
+      const localBlobUrl = URL.createObjectURL(file);
+      initHtml5Player(localBlobUrl);
+      document.getElementById("source-display").textContent = `🎬 Playing: ${file.name}`;
+
+      appendSystemChat(`Selected local file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB). Uploading to room...`);
+
+      // Show Progress Bar
+      const progressBox = document.getElementById("upload-progress-box");
+      const progressText = document.getElementById("upload-progress-text");
+      const progressPercent = document.getElementById("upload-progress-percent");
+      const progressFill = document.getElementById("upload-progress-fill");
+      progressBox.style.display = "block";
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `/api/upload-video?ext=${ext}`, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          const uploadedMB = (event.loaded / (1024 * 1024)).toFixed(1);
+          const totalMB = (event.total / (1024 * 1024)).toFixed(1);
+
+          progressPercent.textContent = `${percent}%`;
+          progressText.textContent = `Streaming "${file.name}" (${uploadedMB} / ${totalMB} MB)...`;
+          progressFill.style.width = `${percent}%`;
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const data = JSON.parse(xhr.responseText);
+          if (!data.success || !data.videoUrl) {
+            const message = data.error || "The server rejected this video.";
+            progressText.textContent = message;
+            appendSystemChat(message);
+            return;
+          }
+          // Share only the relative server URL. A blob URL belongs exclusively
+          // to this browser and localhost is unreachable from a friend's device.
+          const streamUrl = data.videoUrl;
+
+          progressText.textContent = data.convertedFrom === "mkv"
+            ? "✓ MKV converted to MP4. Stream ready for all devices."
+            : "✓ Movie uploaded! Stream ready for all devices.";
+          setTimeout(() => { progressBox.style.display = "none"; }, 3000);
+
+          socket.emit("CHANGE_VIDEO_SOURCE", {
+            videoSource: {
+              type: "file",
+              url: streamUrl,
+              title: file.name
+            }
+          });
+          appendSystemChat(`✓ "${file.name}" is now ready and streaming to all connected devices!`);
+        } else {
+          let message = `Upload failed (${xhr.status}).`;
+          try { message = JSON.parse(xhr.responseText).error || message; } catch (error) { /* non-JSON error response */ }
+          progressText.textContent = message;
+          appendSystemChat(message);
+        }
+      };
+
+      xhr.onerror = () => {
+        progressText.textContent = `Upload network error. Playing locally.`;
+        appendSystemChat("Upload network error. The movie is only available on this device.");
+      };
+
+      xhr.send(file);
+    }
+
+    // Modal & URL Parser (Supports YouTube & Direct Video URLs)
+    function openUrlModal() { document.getElementById("url-modal").style.display = "flex"; }
+    function closeUrlModal() { document.getElementById("url-modal").style.display = "none"; }
+
+    function extractYouTubeId(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function submitVideoUrl() {
+      const rawUrl = document.getElementById("url-input").value.trim();
+      if (!rawUrl) return;
+      closeUrlModal();
+
+      const ytId = extractYouTubeId(rawUrl);
+
+      if (ytId) {
+        const source = {
+          type: "youtube",
+          videoId: ytId,
+          title: `YouTube (${ytId})`
+        };
+        applyVideoSource(source);
+        socket.emit("CHANGE_VIDEO_SOURCE", { videoSource: source });
+      } else {
+        if (isLocalOnlyUrl(rawUrl)) {
+          appendSystemChat("This URL points to the current device and cannot be shared. Use a public HTTPS video URL.");
+          return;
+        }
+        const filename = rawUrl.split("/").pop().split("?")[0] || "Online Video";
+        const source = {
+          type: "url",
+          url: rawUrl,
+          title: filename
+        };
+        applyVideoSource(source);
+        socket.emit("CHANGE_VIDEO_SOURCE", { videoSource: source });
+      }
+    }
+
+    function isLocalOnlyUrl(value) {
+      try {
+        const hostname = new URL(value).hostname.toLowerCase();
+        return hostname === "localhost" ||
+          hostname === "127.0.0.1" ||
+          hostname === "0.0.0.0" ||
+          /^192\.168\./.test(hostname) ||
+          /^10\./.test(hostname) ||
+          /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+      } catch (error) {
+        return false;
+      }
+    }
+
+    // Chat & Reactions
+    socket.on("CHAT_MESSAGE", (msg) => {
+      const div = document.createElement("div");
+      div.className = "chat-msg";
+      div.innerHTML = `<div class="chat-author">${escapeHtml(msg.senderName)}</div><div>${escapeHtml(msg.text)}</div>`;
+      const stream = document.getElementById("chat-stream");
+      stream.appendChild(div);
+      stream.scrollTop = stream.scrollHeight;
+    });
+
+    function sendChat() {
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text || !socket) return;
+      socket.emit("SEND_CHAT", { text });
+      input.value = "";
+    }
+
+    function sendReaction(emoji) {
+      if (socket) socket.emit("SEND_CHAT", { text: emoji });
+    }
+
+    function appendSystemChat(text) {
+      const div = document.createElement("div");
+      div.className = "chat-sys";
+      div.textContent = text;
+      const stream = document.getElementById("chat-stream");
+      stream.appendChild(div);
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function renderMembers(members) {
+      const list = document.getElementById("members-list");
+      list.innerHTML = "";
+      members.forEach((m) => {
+        const pill = document.createElement("div");
+        pill.className = `member-pill ${m.isHost ? "host" : ""}`;
+        pill.textContent = `${m.isHost ? "👑 " : "👤 "}${m.username}`;
+        list.appendChild(pill);
+      });
+    }
+
+    function copyRoomLink() {
+      const link = `${window.location.origin}/watch.html?room=${roomId}`;
+      navigator.clipboard.writeText(link);
+      const btn = document.getElementById("btn-copy");
+      btn.textContent = "✓ Copied!";
+      setTimeout(() => { btn.textContent = "🔗 Copy Link"; }, 2000);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag] || tag));
+    }
+  </script>
+</body>
+</html>

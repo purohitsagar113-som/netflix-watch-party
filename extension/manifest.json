@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "CineSync - OTT Watch Party",
+  "version": "1.1.0",
+  "description": "Watch supported OTT services synchronized in real-time with your friends.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://netflix.com/*",
+    "https://*.netflix.com/*",
+    "https://primevideo.com/*",
+    "https://*.primevideo.com/*",
+    "https://amazon.com/*",
+    "https://*.amazon.com/*",
+    "https://jiohotstar.com/*",
+    "https://*.jiohotstar.com/*",
+    "https://hotstar.com/*",
+    "https://*.hotstar.com/*",
+    "http://localhost:4000/*",
+    "https://*.ngrok-free.dev/*",
+    "https://*.ngrok-free.app/*"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "action": {
+    "default_title": "Open CineSync Watch Party"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://netflix.com/watch/*",
+        "https://*.netflix.com/watch/*",
+        "https://primevideo.com/*",
+        "https://*.primevideo.com/*",
+        "https://amazon.com/*",
+        "https://*.amazon.com/*",
+        "https://jiohotstar.com/*",
+        "https://*.jiohotstar.com/*",
+        "https://hotstar.com/*",
+        "https://*.hotstar.com/*"
+      ],
+      "js": ["src/content/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/content/netflix-bridge.js"],
+      "matches": [
+        "https://netflix.com/*",
+        "https://*.netflix.com/*",
+        "https://primevideo.com/*",
+        "https://*.primevideo.com/*",
+        "https://amazon.com/*",
+        "https://*.amazon.com/*",
+        "https://jiohotstar.com/*",
+        "https://*.jiohotstar.com/*",
+        "https://hotstar.com/*",
+        "https://*.hotstar.com/*"
+      ]
+    }
+  ]
+}

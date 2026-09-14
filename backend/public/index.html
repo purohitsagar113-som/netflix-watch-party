@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineSync — Watch together, wherever you are</title>
+  <style>
+    :root {
+      --bg: #070708;
+      --panel: rgba(20, 20, 23, .78);
+      --panel-solid: #141417;
+      --red: #ef233c;
+      --red-soft: #ff5266;
+      --text: #fafafa;
+      --muted: #9a9aa3;
+      --line: rgba(255,255,255,.1);
+      --green: #5ee58c;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .4;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, black 15%, transparent 78%);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      width: 720px;
+      height: 720px;
+      top: -320px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      background: rgba(180, 10, 31, .18);
+      filter: blur(130px);
+    }
+    a { color: inherit; }
+    .shell { position: relative; z-index: 1; }
+    .nav {
+      position: sticky;
+      top: 18px;
+      z-index: 5;
+      max-width: 1080px;
+      margin: 18px auto 0;
+      padding: 12px 16px 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(8,8,9,.72);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; letter-spacing: -.03em; }
+    .brand-mark { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; background: var(--red); box-shadow: 0 0 22px rgba(239,35,60,.35); font-size: 15px; }
+    .nav-links { display: flex; gap: 28px; color: var(--muted); font-size: 13px; }
+    .nav-links a { text-decoration: none; transition: color .2s; }
+    .nav-links a:hover { color: white; }
+    .nav-cta, .btn { border: 0; cursor: pointer; text-decoration: none; font-weight: 800; }
+    .nav-cta { padding: 9px 15px; color: white; background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: 999px; font-size: 12px; }
+    .nav-cta:hover { border-color: rgba(239,35,60,.65); }
+    main { max-width: 1080px; margin: 0 auto; padding: 86px 22px 0; }
+    .hero { max-width: 760px; margin: 0 auto; text-align: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 9px; padding: 7px 13px; color: #d0d0d5; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 999px; font-size: 11px; letter-spacing: .13em; text-transform: uppercase; }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 5px rgba(239,35,60,.14); }
+    h1 { margin: 25px 0 18px; font-size: clamp(45px, 8vw, 84px); line-height: .98; letter-spacing: -.075em; }
+    h1 span { color: var(--red); }
+    .hero-copy { max-width: 590px; margin: 0 auto; color: var(--muted); font-size: 17px; line-height: 1.65; }
+    .hero-actions { display: flex; justify-content: center; gap: 12px; margin-top: 30px; }
+    .btn { display: inline-flex; justify-content: center; align-items: center; gap: 9px; padding: 14px 21px; border-radius: 12px; font-size: 13px; transition: transform .2s, background .2s, border-color .2s; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { color: white; background: var(--red); box-shadow: 0 0 28px rgba(239,35,60,.2); }
+    .btn-primary:hover { background: var(--red-soft); }
+    .btn-secondary { color: white; background: rgba(255,255,255,.06); border: 1px solid var(--line); }
+    .btn-secondary:hover { background: rgba(255,255,255,.1); }
+    .trust-strip { margin: 82px 0 0; padding: 22px 0; display: flex; align-items: center; gap: 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: #777780; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    .trust-items { display: flex; flex-wrap: wrap; gap: 24px; color: #c7c7cd; letter-spacing: .02em; text-transform: none; font-weight: 700; font-size: 13px; }
+    .section { padding: 112px 0 0; }
+    .section-heading { max-width: 620px; margin-bottom: 34px; }
+    .section-heading h2 { font-size: clamp(30px, 5vw, 48px); line-height: 1.05; letter-spacing: -.06em; }
+    .section-heading h2 span { color: var(--red); }
+    .section-heading p { margin-top: 14px; color: var(--muted); line-height: 1.6; }
+    .modes { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+    .card { position: relative; overflow: hidden; min-height: 320px; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(145deg, rgba(26,26,30,.9), rgba(9,9,10,.82)); transition: transform .25s, border-color .25s; }
+    .card:hover { transform: translateY(-5px); border-color: rgba(239,35,60,.48); }
+    .card::after { content: ""; position: absolute; width: 240px; height: 240px; right: -90px; bottom: -110px; background: rgba(239,35,60,.12); filter: blur(55px); pointer-events: none; }
+    .card-small { min-height: 0; }
+    .card-badge { display: flex; width: fit-content; padding: 6px 9px; border-radius: 999px; background: rgba(239,35,60,.12); color: #ff8a98; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .card-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      margin: 27px 0 16px;
+      color: rgba(255,255,255,.9);
+      font-size: 31px;
+    }
+    .card-icon svg {
+      display: block;
+      width: 54px;
+      height: 54px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .ott-card-logos {
+      width: auto;
+      height: 54px;
+      gap: 10px;
+    }
+    .ott-card-logos img {
+      display: block;
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 9px;
+    }
+    .ott-card-logos img.hotstar-logo {
+      padding: 4px;
+      border: 2px solid rgba(255,255,255,.9);
+      background: white;
+    }
+    .personal-card-logos {
+      width: auto;
+      height: 54px;
+      gap: 12px;
+    }
+    .personal-card-logos .youtube-logo {
+      display: grid;
+      place-items: center;
+      width: 108px;
+      height: 42px;
+      padding: 5px 8px;
+      border: 2px solid rgba(255,255,255,.9);
+      border-radius: 9px;
+      background: white;
+    }
+    .personal-card-logos .youtube-logo img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .card h3 { font-size: 25px; letter-spacing: -.04em; }
+    .card p { max-width: 570px; margin: 10px 0 22px; color: var(--muted); line-height: 1.6; font-size: 14px; }
+    .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px 22px; list-style: none; padding: 0; color: #cfcfd5; font-size: 12px; }
+    .features li::before { content: "✓"; color: var(--green); margin-right: 7px; font-weight: 900; }
+    .card .btn { position: relative; z-index: 1; margin-top: 26px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 16px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--line); }
+    .stat { padding: 24px; background: rgba(19,19,22,.8); }
+    .stat strong { display: block; color: var(--red); font-size: 27px; letter-spacing: -.05em; }
+    .stat span { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
+    footer { margin-top: 120px; padding: 30px 0 40px; border-top: 1px solid var(--line); color: #6d6d75; font-size: 12px; display: flex; justify-content: space-between; gap: 20px; }
+    footer a { color: #bdbdc4; text-decoration: none; }
+    footer a:hover { color: var(--red-soft); }
+    @media (max-width: 700px) {
+      .nav { top: 10px; margin: 10px 12px 0; }
+      .nav-links { display: none; }
+      main { padding-top: 72px; }
+      h1 { font-size: clamp(46px, 14vw, 70px); }
+      .hero-copy { font-size: 15px; }
+      .hero-actions { flex-direction: column; }
+      .trust-strip { align-items: flex-start; flex-direction: column; gap: 14px; margin-top: 62px; }
+      .modes, .stats { grid-template-columns: 1fr; }
+      .card { min-height: auto; padding: 22px; }
+      .features { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16l-1.5 14h-13L4 5Z"/><path d="M4 5h16M7 5l1 14M12 5v14M17 5l-1 14M6 2l2 3M12 2v3M18 2l-2 3"/></svg></span><span>CineSync</span></a>
+      <div class="nav-links"><a href="#modes">Modes</a><a href="/extension-guide.html">Setup guide</a><a href="/watch.html">Personal room</a></div>
+      <a class="nav-cta" href="#modes">Start a party <span aria-hidden="true">↗</span></a>
+    </nav>
+    <main>
+      <section class="hero">
+        <div class="eyebrow"><span class="pulse"></span> Real-time sync engine online</div>
+        <h1>Press play.<br><span>Stay together.</span></h1>
+        <p class="hero-copy">A beautifully simple watch party for movie files and supported streaming services. Share a room, invite your people, and let CineSync handle the timing.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/watch.html">Launch Personal Room</a>
+          <a class="btn btn-secondary" href="/extension-guide.html">Install OTT Extension <span>→</span></a>
+        </div>
+      </section>
+      <div class="trust-strip"><span>Built for every screen</span><div class="trust-items"><span>iPhone</span><span>Android</span><span>Chrome</span><span>Edge</span><span>Brave</span></div></div>
+      <section class="section" id="modes">
+        <div class="section-heading"><h2>One room. <span>Two ways</span> to watch.</h2><p>Choose the experience that fits your movie night. Both modes include synchronized playback, live chat, and instant invites.</p></div>
+        <div class="modes">
+          <article class="card">
+            <span class="card-badge">No extension needed</span>
+            <div class="card-icon personal-card-logos" aria-label="Personal movie files and YouTube">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m8 6 2-3h4l2 3M8 18l2 3h4l2-3M9 10h.01M15 10h.01"/></svg>
+              <span class="youtube-logo" title="YouTube">
+                <img src="./YouTube_Logo_2017.svg.webp" alt="YouTube">
+              </span>
+            </div>
+            <h3>Personal Movie Files</h3>
+            <p>Upload an MP4, MKV, WebM, or paste a direct stream URL. Friends can join from a phone, tablet, or laptop with nothing to install.</p>
+            <ul class="features"><li>Local file streaming</li><li>Play, pause & seek sync</li><li>Live chat & reactions</li><li>Works on mobile browsers</li></ul>
+            <a class="btn btn-primary" href="/watch.html">Launch Watch Room <span>→</span></a>
+          </article>
+          <article class="card card-small">
+            <span class="card-badge">Browser extension</span>
+            <div class="card-icon ott-card-logos" aria-label="Netflix, Prime Video, JioHotstar, SonyLIV, and ZEE5">
+              <img src="./netflix_logo_icon_170919.svg" alt="Netflix">
+              <img src="./Amazon_Prime_Video_logo_(2024).svg" alt="Prime Video">
+              <img class="hotstar-logo" src="./jiohotstar-seeklogo.svg" alt="JioHotstar">
+              <img src="./SonyLIV_2020.png" alt="SonyLIV">
+              <img src="./Zee_5_logo_2025.png" alt="ZEE5">
+            </div>
+            <h3>OTT Watch Party</h3>
+            <p>Watch through your own subscription while CineSync keeps Netflix, Prime Video, JioHotstar, SonyLIV, and ZEE5 in lockstep.</p>
+            <ul class="features"><li>OTT playback sync</li><li>Side Panel controls</li><li>Automatic drift catchup</li><li>Invite by room link</li></ul>
+            <a class="btn btn-secondary" href="/extension-guide.html">View Setup Guide <span>→</span></a>
+          </article>
+        </div>
+        <div class="stats"><div class="stat"><strong>0 lag</strong><span>Drift correction keeps everyone together.</span></div><div class="stat"><strong>1 link</strong><span>Invite friends in seconds.</span></div><div class="stat"><strong>∞ vibes</strong><span>Chat, react, and enjoy the moment.</span></div></div>
+      </section>
+      <footer><span>CineSync © 2026 · Built for better movie nights.</span><span><a href="/watch.html">Personal room</a> · <a href="/extension-guide.html">Extension guide</a></span></footer>
+    </main>
+  </div>
+</body>
+</html>

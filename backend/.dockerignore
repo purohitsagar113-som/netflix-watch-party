@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log*
+uploads
+test-cinesync.mkv
+.env
+.env.*
+Dockerfile
+.git
+.gitignore
