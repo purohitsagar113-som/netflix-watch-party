@@ -23,6 +23,7 @@
     "https://hotstar.com/*",
     "https://*.hotstar.com/*",
     "http://localhost:4000/*",
+    "https://cinesync-hcow.onrender.com/*",
     "https://*.ngrok-free.dev/*",
     "https://*.ngrok-free.app/*"
   ],

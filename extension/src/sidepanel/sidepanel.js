@@ -239,7 +239,7 @@ function joinRoom(roomId, username, serverUrl) {
 
 function normalizeServerUrl(value) {
   const raw = value.trim();
-  if (!raw) return "http://localhost:4000";
+  if (!raw) return "https://cinesync-hcow.onrender.com";
 
   try {
     const parsed = new URL(raw);
