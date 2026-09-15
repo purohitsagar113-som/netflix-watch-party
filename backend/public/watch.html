@@ -24,7 +24,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    body { background-color: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
 
     /* Header */
     header {
@@ -36,7 +36,7 @@
       align-items: center;
       z-index: 10;
     }
-    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; color: var(--accent); text-decoration: none; }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; color: var(--accent); text-decoration: none; min-width: 0; }
     .room-tag {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -54,6 +54,7 @@
       flex: 1;
       display: flex;
       overflow: hidden;
+      min-width: 0;
     }
     @media (max-width: 860px) {
       .app-layout { flex-direction: column; overflow-y: auto; }
@@ -67,6 +68,7 @@
       flex-direction: column;
       background: #000;
       position: relative;
+      min-width: 0;
     }
     .video-wrapper {
       flex: 1;
@@ -76,6 +78,7 @@
       justify-content: center;
       background: #000;
       overflow: hidden;
+      min-width: 0;
     }
     video {
       width: 100%;
@@ -144,6 +147,7 @@
     /* Sidebar */
     .sidebar {
       width: 340px;
+      min-width: 0;
       background: var(--panel-bg);
       border-left: 1px solid var(--border);
       display: flex;
@@ -197,6 +201,7 @@
     /* Chat Stream */
     .chat-stream {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 14px 16px;
       display: flex;
@@ -245,6 +250,7 @@
     }
     .chat-input-bar input {
       flex: 1;
+      min-width: 0;
       background: #0d0e15;
       border: 1px solid var(--border);
       color: var(--text);
@@ -271,6 +277,7 @@
       padding: 24px;
       width: 90%;
       max-width: 440px;
+      min-width: 0;
     }
     body { background: #070708; }
     header { background: rgba(8,8,9,.82); backdrop-filter: blur(18px); border-bottom-color: rgba(255,255,255,.1); padding: 14px 22px; }
@@ -437,6 +444,129 @@
     .btn .icon { width: 17px; height: 17px; }
     .rx-btn { transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .rx-btn:hover { transform: translateY(-2px); border-color: rgba(239,35,60,.6); box-shadow: 0 0 18px rgba(239,35,60,.16); }
+
+    @media (max-width: 860px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      header {
+        margin: 8px 8px 0;
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .brand, .room-tag {
+        min-width: 0;
+      }
+      .brand {
+        flex: 1 1 auto;
+      }
+      .brand-logo {
+        width: 108px;
+        max-width: 100%;
+      }
+      .room-tag {
+        flex: 0 1 auto;
+        max-width: 58%;
+        padding: 5px 8px;
+        gap: 5px;
+      }
+      .room-tag strong {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .app-layout {
+        margin: 0 8px 8px;
+        overflow: visible;
+        flex: none;
+      }
+      .player-section {
+        width: 100%;
+        flex: none;
+      }
+      .video-wrapper {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        flex: none;
+      }
+      .video-wrapper video,
+      .video-wrapper #yt-player-container {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+      }
+      .source-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        padding: 10px 12px;
+      }
+      .source-title {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-width: 0;
+      }
+      .source-bar > .btn {
+        width: 100%;
+        min-width: 0;
+        min-height: 40px;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .source-bar > .btn span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sidebar {
+        width: 100%;
+        height: clamp(290px, 47vh, 460px);
+        min-height: 290px;
+        flex: 0 0 clamp(290px, 47vh, 460px);
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+      .chat-stream {
+        min-height: 0;
+      }
+      .modal-card {
+        width: 90%;
+        padding: 18px;
+      }
+      .modal-card input {
+        min-width: 0;
+        max-width: 100%;
+      }
+      .modal-card .btn {
+        min-height: 40px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand > span,
+      .room-tag > span,
+      #btn-copy span {
+        display: none;
+      }
+      .brand-logo {
+        width: 100px;
+      }
+      .room-tag {
+        max-width: 48%;
+        padding: 5px 6px;
+      }
+      #btn-copy {
+        padding: 7px !important;
+        min-width: 34px;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body>
@@ -445,14 +575,14 @@
   <header>
     <a href="/" class="brand">
       <img class="brand-logo" src="./cinesync-logo.svg" alt="CineSync">
-      <span>Watch Room</span>
+      <span>Personal Room</span>
     </a>
     <div class="room-tag">
       <span>Room:</span>
       <strong id="room-code-display">CINE-0000</strong>
       <button class="btn" id="btn-copy" onclick="copyRoomLink()" style="padding: 3px 8px; font-size: 11px;">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        <span>Copy Link</span>
+        <span id="copy-label">Copy Link</span>
       </button>
     </div>
   </header>
@@ -578,6 +708,7 @@
     let socket = null;
     let isRemoteActionLock = false;
     let isHost = false;
+    let activeBlobUrl = null;
 
     // Connect to Socket.io Server
     socket = io();
@@ -595,7 +726,7 @@
         applyVideoSource(room.videoSource);
       }
 
-      if (room.currentTime) {
+      if (typeof room.currentTime === "number") {
         seekActivePlayer(room.currentTime);
       }
       if (room.isPlaying) {
@@ -736,7 +867,14 @@
       htmlVideo.style.display = "block";
       const resolvedUrl = resolveVideoUrl(url);
       if (htmlVideo.src !== resolvedUrl) {
+        if (activeBlobUrl && activeBlobUrl !== resolvedUrl) {
+          URL.revokeObjectURL(activeBlobUrl);
+          activeBlobUrl = null;
+        }
         htmlVideo.src = resolvedUrl;
+      }
+      if (resolvedUrl.startsWith("blob:")) {
+        activeBlobUrl = resolvedUrl;
       }
     }
 
@@ -827,7 +965,15 @@
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          const data = JSON.parse(xhr.responseText);
+          let data;
+          try {
+            data = JSON.parse(xhr.responseText);
+          } catch (error) {
+            const message = "Upload failed: invalid server response.";
+            progressText.textContent = message;
+            appendSystemChat(message);
+            return;
+          }
           if (!data.success || !data.videoUrl) {
             const message = data.error || "The server rejected this video.";
             progressText.textContent = message;
@@ -967,9 +1113,9 @@
     function copyRoomLink() {
       const link = `${window.location.origin}/watch.html?room=${roomId}`;
       navigator.clipboard.writeText(link);
-      const btn = document.getElementById("btn-copy");
-      btn.textContent = "✓ Copied!";
-      setTimeout(() => { btn.textContent = "🔗 Copy Link"; }, 2000);
+      const label = document.getElementById("copy-label");
+      label.textContent = "Copied!";
+      setTimeout(() => { label.textContent = "Copy Link"; }, 2000);
     }
 
     function escapeHtml(str) {
