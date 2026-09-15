@@ -1,5 +1,0 @@
-# Allow all crawlers to index the website
-User-agent: *
-Disallow: 
-
-Sitemap: https://cinesync-hcow.onrender.com/sitemap.xml
