@@ -19,6 +19,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/robots.txt", (_req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.type("text/plain").send(
+    "User-agent: Googlebot\n" +
+    "Allow: /\n\n" +
+    "User-agent: *\n" +
+    "Allow: /\n\n" +
+    "Sitemap: https://cinesync-hcow.onrender.com/sitemap.xml\n"
+  );
+});
+
 // Ensure uploads directory exists
 const UPLOADS_DIR = path.join(__dirname, "../uploads");
 if (!fs.existsSync(UPLOADS_DIR)) {
